@@ -1,0 +1,37 @@
+# HireHub Application Configuration Template
+# Copy this file to application.properties and provide your local credentials
+
+# Server Port
+server.port=8080
+
+# Database Configuration (PostgreSQL)
+spring.datasource.url=${DB_URL:jdbc:postgresql://localhost:5432/hirehub}
+spring.datasource.username=${DB_USERNAME:postgres}
+spring.datasource.password=${DB_PASSWORD:postgres}
+spring.datasource.driver-class-name=org.postgresql.Driver
+spring.jpa.hibernate.ddl-auto=update
+spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect
+spring.jpa.show-sql=false
+
+# JWT Security
+jwt.secret=${JWT_SECRET:hirehub-super-secure-jwt-signing-secret-key-at-least-256-bits-long-2026}
+jwt.expiration=${JWT_EXPIRATION:86400000}
+
+# Cloudinary File Storage (for profile pictures and resumes)
+cloudinary.cloud-name=${CLOUDINARY_CLOUD_NAME:hirehub-cloud}
+cloudinary.api-key=${CLOUDINARY_API_KEY:123456789012345}
+cloudinary.api-secret=${CLOUDINARY_API_SECRET:hirehub-secret-placeholder}
+
+# Mail / SMTP Configuration (e.g. Brevo or Gmail)
+spring.mail.host=${MAIL_HOST:localhost}
+spring.mail.port=${MAIL_PORT:587}
+spring.mail.username=${MAIL_USERNAME:user}
+spring.mail.password=${MAIL_PASSWORD:pass}
+spring.mail.properties.mail.smtp.auth=true
+spring.mail.properties.mail.smtp.starttls.enable=true
+app.email.from=${APP_EMAIL_FROM:notifications@hirehub.dev}
+app.email.name=${APP_EMAIL_NAME:HireHub}
+
+# Rate Limiting (Bucket4j)
+auth.ratelimit.requests=10
+auth.ratelimit.window-minutes=1
