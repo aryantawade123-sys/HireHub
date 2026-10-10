@@ -1,8 +1,12 @@
 import PropTypes from "prop-types";
+import CompanyLogo from "./CompanyLogo";
 
 const openResume = (url) => {
   if (!url) return;
-  window.open(`https://docs.google.com/viewer?url=${encodeURIComponent(url)}`, '_blank');
+  window.open(
+    `https://docs.google.com/viewer?url=${encodeURIComponent(url)}`,
+    "_blank"
+  );
 };
 
 export default function ApplicationDetailsCard({ application }) {
@@ -33,16 +37,20 @@ export default function ApplicationDetailsCard({ application }) {
     <div className="max-w-3xl mx-auto mt-4 md:mt-10 bg-white p-4 md:p-8 rounded-lg shadow-lg border border-gray-200">
       {/* Header */}
       <div className="flex flex-wrap items-center gap-4 md:gap-5 mb-5 md:mb-6">
-        <div className="w-14 h-14 md:w-16 md:h-16 flex-shrink-0 rounded border bg-white flex items-center justify-center overflow-hidden">
-          <img
-            src={application.companyLogoUrl || "/default-logo.png"}
-            alt="Company Logo"
-            className="object-contain w-full h-full"
-          />
-        </div>
+        <CompanyLogo
+          src={application.companyLogoUrl}
+          companyName={application.companyName}
+          size="md"
+        />
+
         <div className="min-w-0 flex-1">
-          <h1 className="text-xl md:text-2xl font-bold text-gray-800 break-words">{application.jobTitle}</h1>
-          <p className="text-gray-600 text-sm break-words">{application.companyName} • {application.location}</p>
+          <h1 className="text-xl md:text-2xl font-bold text-gray-800 break-words">
+            {application.jobTitle}
+          </h1>
+
+          <p className="text-gray-600 text-sm break-words">
+            {application.companyName} • {application.location}
+          </p>
         </div>
       </div>
 
@@ -51,8 +59,11 @@ export default function ApplicationDetailsCard({ application }) {
         <span className="px-3 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-500 border border-gray-300">
           Applied
         </span>
+
         <span
-          className={`px-3 py-1 text-xs font-semibold uppercase rounded-full border ${getStatusStyle(application.status)}`}
+          className={`px-3 py-1 text-xs font-semibold uppercase rounded-full border ${getStatusStyle(
+            application.status
+          )}`}
         >
           {application.status}
         </span>
@@ -62,18 +73,29 @@ export default function ApplicationDetailsCard({ application }) {
 
       {/* Job Details */}
       <div className="space-y-2 text-sm text-gray-800 leading-relaxed">
-        <div><strong>🕓 Applied At:</strong> {formatDate(application.appliedAt)}</div>
-        <div><strong>📋 Job Type:</strong> {application.jobType.replace("_", " ")}</div>
-        <div><strong>💼 Work Mode:</strong> {application.workMode.replace("_", " ")}</div>
-        <div><strong>📍 Location:</strong> {application.location}</div>
-        <div><strong>📝 Description:</strong> {application.jobDescription}</div>
-      </div>
+        <div>
+          <strong>🕓 Applied At:</strong>{" "}
+          {formatDate(application.appliedAt)}
+        </div>
 
-      <hr className="my-4" />
+        <div>
+          <strong>📋 Job Type:</strong>{" "}
+          {application.jobType.replace("_", " ")}
+        </div>
 
-      {/* Applicant Details */}
-      <div className="space-y-2 text-sm text-gray-800 leading-relaxed">
-        <div><strong>🙍 Applicant:</strong> {application.username}</div>
+        <div>
+          <strong>💼 Work Mode:</strong>{" "}
+          {application.workMode.replace("_", " ")}
+        </div>
+
+        <div>
+          <strong>📍 Location:</strong> {application.location}
+        </div>
+
+        <div>
+          <strong>👤 Applicant:</strong> {application.username}
+        </div>
+
         <div>
           <strong>📄 Resume:</strong>{" "}
           {application.resumeUrl ? (
@@ -87,7 +109,11 @@ export default function ApplicationDetailsCard({ application }) {
             <span className="text-gray-500">Not available</span>
           )}
         </div>
-        <div><strong>🆔 Application ID:</strong> {application.applicationId}</div>
+
+        <div>
+          <strong>🆔 Application ID:</strong>{" "}
+          {application.applicationId}
+        </div>
       </div>
     </div>
   );

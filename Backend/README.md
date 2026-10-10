@@ -1,439 +1,266 @@
-# 💼 HireHub — Full-Stack Job Portal
+# HireHub — Full-Stack Job Portal
 
-HireHub is a full-stack job portal that connects **Job Seekers** with **Employers**.
+HireHub is a customized and extended version of an open-source full-stack job portal.
 
-Job Seekers can discover jobs, view job details, save jobs, apply with their resume, and track their application status. Employers can create and manage job postings, view applicants, and update application statuses.
+The project provides separate workflows for job seekers and employers, including authentication, job management, applications, applicant management, application status updates, resume uploads, and notifications.
 
-The project is built using **React + Vite** for the frontend and **Spring Boot + PostgreSQL** for the backend, with **JWT authentication** and **Cloudinary** for resume uploads.
+## Project Background
 
----
+This project started from the open-source repository:
 
-## 🚀 Features
+https://github.com/ahmedhossam32/FullStackJobPortal
 
-### 👨‍💻 Job Seeker
+The original project and its authors retain their respective rights and attribution.
 
-- Register and login
-- Browse available jobs
-- View detailed job information
-- Search and explore job listings
+I used the project as a learning base and extended/customized parts of the application while testing the complete job-seeker and employer workflows locally.
+
+## What I Worked On
+
+The following are changes and improvements made during my work on the project:
+
+- Added working `/jobs/:id` routing for direct job-detail navigation.
+- Improved the Job Seeker "My Jobs" page to dynamically count applications with `INTERVIEW` status.
+- Added/updated application status presentation in the Job Seeker workflow.
+- Configured Cloudinary-based resume uploads through environment variables.
+- Tested the complete application workflow:
+  - Job seeker registration/login
+  - Employer registration/login
+  - Job creation
+  - Job editing and deletion
+  - Job application
+  - Resume upload
+  - Employer applicant management
+  - Application status updates
+  - Job seeker status tracking
+- Added project-level documentation and screenshots for the tested workflows.
+
+## Features
+
+### Job Seeker
+
+- Register and log in
+- Browse jobs
+- Search/filter jobs
+- View job details
 - Save jobs
 - Apply for jobs
-- Upload resume while applying
+- Upload resumes
 - View submitted applications
 - Track application status
 - Withdraw applications
-- View interview status
-- View application details
+- View interview-status applications
+- Receive application-status notifications
 
-### 🏢 Employer
+### Employer
 
-- Register and login
-- Create job postings
-- View posted jobs
-- Edit existing jobs
+- Register and log in
+- Create jobs
+- Edit jobs
 - Delete jobs
-- View applicants for posted jobs
-- View applicant details
+- View posted jobs
+- View applicants
+- View application details
 - Update application status
-- Manage recruitment workflow
+- Manage the hiring workflow
+- View dashboard statistics
 
-### 🔐 Authentication & Authorization
-
-- JWT-based authentication
-- Role-based access control
-- Separate Job Seeker and Employer flows
-- Protected backend APIs
-- Secure authenticated requests
-
-### ☁️ File Upload
-
-- Resume upload using Cloudinary
-- Resume URL stored with the application
-- Cloud-based file storage
-
-### 📊 Application Tracking
-
-Supported application statuses include:
-
-- `PENDING`
-- `REVIEWED`
-- `INTERVIEW`
-- `OFFERED`
-- `REJECTED`
-- `WITHDRAWN`
-
----
-
-## 🛠️ Tech Stack
-
-### Frontend
-
-- React
-- Vite
-- JavaScript
-- Tailwind CSS
-- Axios
-- React Router
-- Lucide React
-- React Toastify
+## Tech Stack
 
 ### Backend
 
 - Java
 - Spring Boot
 - Spring Security
-- JWT
+- JWT Authentication
 - Spring Data JPA
 - Hibernate
-- Maven
-
-### Database
-
 - PostgreSQL
-
-### Cloud Storage
-
+- Maven
 - Cloudinary
 
----
+### Frontend
 
-## 🏗️ Project Architecture
+- React
+- Vite
+- JavaScript
+- React Router
+- Axios
+- Tailwind CSS
+- Lucide React
+- React Toastify
 
-HireHub follows a full-stack client-server architecture.
-
-```text
-                    ┌─────────────────────┐
-                    │      HireHub        │
-                    │     Frontend        │
-                    │   React + Vite      │
-                    └──────────┬──────────┘
-                               │
-                               │ REST API
-                               ▼
-                    ┌─────────────────────┐
-                    │      HireHub        │
-                    │      Backend        │
-                    │ Spring Boot + JWT   │
-                    └──────────┬──────────┘
-                               │
-                    ┌──────────┴──────────┐
-                    ▼                     ▼
-             ┌─────────────┐       ┌─────────────┐
-             │ PostgreSQL  │       │  Cloudinary │
-             │  Database   │       │ Resume Files│
-             └─────────────┘       └─────────────┘
-             ---
-
-## 📁 Project Structure
+## Architecture
 
 ```text
+React + Vite Frontend
+        |
+        | REST API
+        v
+Spring Boot Backend
+        |
+        +---- Spring Security + JWT
+        |
+        +---- Service Layer
+        |
+        +---- Repository Layer
+        |
+        v
+PostgreSQL Database
+
+Resume / File Uploads
+        |
+        v
+Cloudinary
+
+Project Structure
 HireHub/
 │
 ├── Backend/
 │   └── JobPortal/
 │       ├── src/
-│       │   └── main/
-│       │       ├── java/
-│       │       └── resources/
-│       │
 │       ├── pom.xml
-│       └── ...
+│       └── Dockerfile
 │
 ├── Frontend/
 │   └── JobPortalFront/
 │       ├── src/
-│       ├── public/
 │       ├── package.json
-│       ├── vite.config.js
-│       └── ...
+│       └── vite.config.js
 │
-└── README.md
----
+├── ScreenShots/
+├── Full_Walkthrough.md
+├── README.md
+└── .gitignore
 
-## ⚙️ Local Setup
-
-Follow the steps below to run HireHub locally.
-
-### Prerequisites
-
-Make sure you have:
-
+Local Setup
+Requirements
+Install:
 - Java 17+
 - Maven
 - Node.js
 - npm
 - PostgreSQL
-- Git
----
-
-## 🗄️ PostgreSQL Setup
-
-Create a PostgreSQL database named:
-
-```text
-hirehub
-5432
-Configure your PostgreSQL username and password using environment variables.
-
-> Never commit database passwords or other secrets to GitHub.
----
-
-## ☁️ Cloudinary Configuration
-
-HireHub uses Cloudinary for resume uploads.
-
-Set these environment variables:
-
-```text
-CLOUDINARY_CLOUD_NAME
-CLOUDINARY_API_KEY
-CLOUDINARY_API_SECRET
-> Never commit real Cloudinary credentials to GitHub.
----
-
-## 🔧 Backend Setup
-
-Open a terminal and run:
-
-```powershell
-cd "C:\Users\Aryan Tawade\Desktop\HireHub\Backend\JobPortal"
+Backend
+cd Backend\JobPortal
 mvn spring-boot:run
+
+Backend runs on:
 http://localhost:8080
----
 
-## 🎨 Frontend Setup
-
+Frontend
 Open another terminal:
+cd Frontend\JobPortalFront
+npm install
+npm run dev
 
-```powershell
-cd "C:\Users\Aryan Tawade\Desktop\HireHub\Frontend\JobPortalFront"
-  npm install
-  npm run dev
-  http://localhost:5173
-  Open the application in your browser:
-  http://localhost:5173
-  ---
+Frontend runs on:
+http://localhost:5173
 
-## 🔐 Authentication Flow
+Database
+The backend uses PostgreSQL.
+Create a database named:
+Database
+hirehub
 
+Database credentials should be provided through environment variables.
+Do not commit real credentials or secrets.
+Environment Variables
+Sensitive configuration is intentionally excluded from Git.
+Example configuration is provided in:
+
+Backend/JobPortal/.env.example
+
+Cloudinary credentials should also be supplied through environment variables.
+Authentication
 HireHub uses JWT-based authentication.
+The application supports role-based access for:
 
-```text
-User
-  ↓
-Login / Signup
-  ↓
-Spring Boot Authentication
-  ↓
-JWT Token
-  ↓
-Authenticated API Requests
-  ↓
-Spring Security
-  ↓
-Protected Resource
----
+JOB_SEEKER
+EMPLOYER
 
-## 👥 User Roles
-
-### Job Seeker
-
-Job Seekers can:
-
-- Browse jobs
-- View job details
-- Save jobs
-- Apply for jobs
-- Upload resumes
-- View applications
-- Track application status
-- Withdraw applications
-
-### Employer
-
-Employers can:
-
-- Create jobs
-- Edit jobs
-- Delete jobs
-- View applicants
-- View application details
-- Update application status
----
-
-## 🔌 API Overview
-
-### Authentication
-
-```text
-POST /auth/signup/jobseeker
-POST /auth/signup/employer
-POST /auth/signin
-Jobs
-GET    /jobs
-GET    /jobs/{id}
-POST   /jobs
-PUT    /jobs/{id}
-DELETE /jobs/{id}
-Applications
-POST   /applications
-GET    /applications/my
-GET    /applications/{id}
-DELETE /applications/{id}
-Employer Applications
-GET /employer/applications
-PUT /applications/{id}/status
-Resume Upload
-POST /user/jobseeker/upload-resume
-Protected endpoints require authentication using a JWT token.
----
-
-## 🔄 Application Workflow
-
-A typical Job Seeker workflow:
-
-```text
-Register
-   ↓
-Login
-   ↓
+Protected backend endpoints validate the authenticated user and role before allowing access.
+Application Workflow
+Job Seeker
+    |
+    v
 Browse Jobs
-   ↓
-View Job Details
-   ↓
-Apply for Job
-   ↓
-Upload Resume
-   ↓
-Application Submitted
-   ↓
+    |
+    v
+View Job
+    |
+    v
+Apply + Upload Resume
+    |
+    v
 Employer Reviews Application
-   ↓
+    |
+    v
 Employer Updates Status
-   ↓
+    |
+    v
 Job Seeker Sees Updated Status
 
-Example application statuses:
-PENDING
-   ↓
-REVIEWED
-   ↓
-INTERVIEW
-   ↓
-OFFERED
-An application can also be:
-REJECTED
+Testing Performed
+The following workflows were tested locally:
+- Job seeker authentication
+- Employer authentication
+- Job creation
+- Job editing
+- Job deletion
+- Job application
+- Resume upload through Cloudinary
+- My Applications
+- Employer applicant management
+- Application status updates
+- Interview-status tracking
+- Job detail navigation
+- Frontend production build
+Testing Notes
+The frontend production build completes successfully.
+The backend unit tests pass for the observer-related tests. The full Maven test suite also contains an integration test that requires a working Docker environment through Testcontainers.
+Security Notes
+- Real application secrets are excluded from Git.
+- Database credentials are not committed.
+- Cloudinary credentials are not committed.
+- JWT configuration is supplied through environment variables.
+- .gitignore excludes local sensitive configuration and generated build files.
+Screenshots
+The ScreenShots/ directory contains screenshots of the tested Job Seeker and Employer workflows.
+See:
 
-  or withdrawn by the Job Seeker:
-  WITHDRAWN
-  ---
-
-## 🧪 Tested Features
-
-### Job Seeker
-
-- ✅ Registration
-- ✅ Login
-- ✅ Browse jobs
-- ✅ View job details
-- ✅ Apply for a job
-- ✅ Resume upload
-- ✅ View submitted applications
-- ✅ Track application status
-- ✅ Withdraw application
-
-### Employer
-
-- ✅ Registration
-- ✅ Login
-- ✅ Employer dashboard
-- ✅ Create job
-- ✅ Edit job
-- ✅ Delete job
-- ✅ View applicants
-- ✅ View application details
-- ✅ Update application status
-
-### End-to-End Flow
-
-```text
-Job Seeker applies
-        ↓
-Employer receives application
-        ↓
-Employer reviews application
-        ↓
-Employer changes application status
-        ↓
-Job Seeker sees updated status
----
-
-## 🔒 Security
-
-HireHub uses JWT-based authentication and role-based authorization.
-
-Security features include:
-
-- JWT authentication
-- Protected API endpoints
-- Role-based access control
-- Password hashing
-- Authenticated application operations
-- Employer ownership checks for job management
-- Job Seeker ownership checks for applications
-
-Sensitive credentials such as database passwords and Cloudinary API secrets should be provided through environment variables and should never be committed to GitHub.
----
-
-## 📝 Environment Variables
-
-Sensitive configuration should be provided through environment variables instead of being committed to the repository.
-
-```text
-DB_URL
-DB_USERNAME
-DB_PASSWORD
-
-CLOUDINARY_CLOUD_NAME
-CLOUDINARY_API_KEY
-CLOUDINARY_API_SECRET
-Never commit API keys, API secrets, database passwords, or other private credentials to GitHub.
----
-
-## 🚀 Future Improvements
-
-Potential future improvements include:
-
-- Email notifications
-- Advanced job search and filtering
-- Recruiter analytics
-- Resume preview
+Full_Walkthrough.md
+for the detailed walkthrough.
+Future Improvements
+Possible future improvements include:
 - Production deployment
-- Docker containerization
-- CI/CD pipeline
-- Cloud deployment
-- Automated testing
----
-
-## 👨‍💻 Author
-
-**Aryan Tawade**
-
-IT Engineering Student  
-Java Backend & Full-Stack Developer
-
-GitHub:  
+- Email notification configuration
+- Advanced job-search filters
+- Automated CI testing
+- Additional application-status workflows
+- Improved production monitoring
+Author
+Aryan Tawade
+GitHub:
 https://github.com/aryantawade123-sys
----
-
-## 📚 Project Background
-
-HireHub is a customized and extended version of an existing open-source job portal project.
-
-The project has been adapted and enhanced with additional functionality, UI changes, resume upload integration, employer/job management, and application-status tracking.
-
-Original repository:
-
+Attribution
+This repository is a customized and extended version of:
 https://github.com/ahmedhossam32/FullStackJobPortal
+The original project is credited above. This repository does not claim the original implementation as entirely my own.
 
-Please refer to the original repository and its license for applicable licensing and attribution requirements.
+for the detailed walkthrough.
+Future Improvements
+Possible future improvements include:
+- Production deployment
+- Email notification configuration
+- Advanced job-search filters
+- Automated CI testing
+- Additional application-status workflows
+- Improved production monitoring
+Author
+Aryan Tawade
+GitHub:
+https://github.com/aryantawade123-sys
+Attribution
+This repository is a customized and extended version of:
+https://github.com/ahmedhossam32/FullStackJobPortal
+The original project is credited above. This repository does not claim the original implementation as entirely my own.

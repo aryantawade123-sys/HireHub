@@ -23,6 +23,8 @@ export default function RequireRole({ role, children }) {
 
   // User is not logged in
   if (!user) {
+    // Save the intended destination so we can redirect after login
+    localStorage.setItem('redirectAfterLogin', location.pathname + location.search);
     return (
       <Navigate
         to="/"

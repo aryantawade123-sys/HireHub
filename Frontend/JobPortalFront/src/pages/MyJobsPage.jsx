@@ -13,8 +13,9 @@ import {
   Trash2,
   XCircle,
 } from "lucide-react";
+import API_URL from "../api/config";
 
-const API_BASE_URL = "http://localhost:8080";
+const API_BASE_URL = API_URL;
 
 const getToken = () => localStorage.getItem("token");
 

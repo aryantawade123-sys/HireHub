@@ -11,11 +11,13 @@ export default function Navbar({ onOpenJobSeeker, onOpenEmployer }) {
     return <NavbarGuest onOpenJobSeeker={onOpenJobSeeker} onOpenEmployer={onOpenEmployer} />;
   }
 
-  if (user.role === "EMPLOYER") {
+  const role = String(user.role || '').toUpperCase().replace(/^ROLE_/, '');
+
+  if (role === 'EMPLOYER') {
     return <NavbarEmployer />;
   }
 
-  if (user.role === "JOB_SEEKER") {
+  if (role === 'JOB_SEEKER') {
     return <NavbarJobSeeker />;
   }
 

@@ -8,6 +8,7 @@ import {
   FaCode,
 } from "react-icons/fa";
 import API_URL from "../api/config";
+import CompanyLogo from "../components/CompanyLogo";
 
 export default function CompanyProfile() {
   const { companyName } = useParams();
@@ -135,13 +136,11 @@ export default function CompanyProfile() {
           <div className="flex flex-col md:flex-row md:items-center gap-6">
 
             {/* Company Avatar */}
-            <div className="w-24 h-24 flex-shrink-0 rounded-2xl bg-gradient-to-br from-blue-50 to-indigo-100 border border-gray-200 shadow-sm flex items-center justify-center">
-
-              <span className="text-3xl font-extrabold text-blue-700">
-                {getInitials(decodedCompanyName)}
-              </span>
-
-            </div>
+            <CompanyLogo
+              companyName={decodedCompanyName}
+              size="xl"
+              className="!w-24 !h-24 !min-w-24 !rounded-3xl shadow-md border-gray-200"
+            />
 
             {/* Company Information */}
             <div className="flex-1">
