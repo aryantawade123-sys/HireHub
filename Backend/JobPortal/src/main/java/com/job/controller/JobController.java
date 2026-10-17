@@ -1,20 +1,26 @@
 package com.job.controller;
 
 import com.job.dto.request.JobRequestDTO;
+import com.job.dto.response.CompensationBenchmarkDTO;
 import com.job.dto.response.JobResponseDTO;
 import com.job.dto.response.PageResponseDTO;
 import com.job.entity.Employer;
 import com.job.entity.Job;
 import com.job.entity.User;
+import com.job.enums.CompensationPeriod;
 import com.job.service.interfaces.IJobService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -22,6 +28,7 @@ import java.util.Map;
 
 @Slf4j
 @RestController
+@Validated
 @RequestMapping("/jobs")
 @RequiredArgsConstructor
 public class JobController {
@@ -116,5 +123,14 @@ public class JobController {
             @RequestParam(defaultValue = "0") @Min(0) int page,
             @RequestParam(defaultValue = "10") @Min(1) @Max(100) int size) {
         return ResponseEntity.ok(jobService.searchByWorkMode(workMode, page, size));
+    }
+
+    @GetMapping("/compensation/benchmark")
+    public ResponseEntity<CompensationBenchmarkDTO> getCompensationBenchmark(
+            @RequestParam @NotBlank @Size(max = 200) String title,
+            @RequestParam(required = false) @Size(max = 200) String location,
+            @RequestParam @Pattern(regexp = "[A-Za-z]{3}") String currency,
+            @RequestParam CompensationPeriod period) {
+        return ResponseEntity.ok(jobService.getCompensationBenchmark(title, location, currency, period));
     }
 }

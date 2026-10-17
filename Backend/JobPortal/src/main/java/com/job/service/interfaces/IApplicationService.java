@@ -3,6 +3,7 @@ package com.job.service.interfaces;
 import com.job.dto.request.ApplicationRequestDTO;
 import com.job.dto.response.ApplicationResponseDTO;
 import com.job.dto.response.ApplicationViewForEmployerDTO;
+import com.job.dto.response.EmployerFunnelAnalyticsDTO;
 import com.job.dto.response.PageResponseDTO;
 import com.job.entity.Employer;
 import com.job.entity.JobSeeker;
@@ -19,5 +20,9 @@ public interface IApplicationService {
     List<ApplicationViewForEmployerDTO> getApplicationsForJob(Long jobId, Employer employer);
     ApplicationViewForEmployerDTO getApplicationViewForEmployer(Long id, Employer employer);
     void updateApplicationStatus(Long applicationId, ApplicationStatus newStatus, Employer employer);
+    ApplicationViewForEmployerDTO updateSilverMedalist(
+            Long applicationId, boolean selected, Employer employer);
+    List<ApplicationViewForEmployerDTO> getSilverMedalistsForEmployer(Employer employer);
     boolean hasUserAppliedToJob(Long jobId, JobSeeker jobSeeker);
+    EmployerFunnelAnalyticsDTO getEmployerFunnelAnalytics(Employer employer);
 }

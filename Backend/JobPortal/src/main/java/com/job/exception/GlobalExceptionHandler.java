@@ -67,6 +67,13 @@ public class GlobalExceptionHandler {
         return respond(HttpStatus.FORBIDDEN, "FORBIDDEN", ex.getMessage(), request);
     }
 
+    @ExceptionHandler(TenantContextException.class)
+    public ResponseEntity<ErrorResponse> handleTenantContext(TenantContextException ex, HttpServletRequest request) {
+        logClientError(request, HttpStatus.FORBIDDEN, "tenant context is unavailable");
+        return respond(HttpStatus.FORBIDDEN, "TENANT_CONTEXT_REQUIRED",
+                "This employer account is not assigned to a company tenant", request);
+    }
+
     @ExceptionHandler(DuplicateResourceException.class)
     public ResponseEntity<ErrorResponse> handleDuplicateResource(DuplicateResourceException ex, HttpServletRequest request) {
         logClientError(request, HttpStatus.CONFLICT, ex.getMessage());
@@ -77,6 +84,12 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleBadRequest(BadRequestException ex, HttpServletRequest request) {
         logClientError(request, HttpStatus.BAD_REQUEST, ex.getMessage());
         return respond(HttpStatus.BAD_REQUEST, "BAD_REQUEST", ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(AiProviderException.class)
+    public ResponseEntity<ErrorResponse> handleAiProvider(AiProviderException ex, HttpServletRequest request) {
+        log.error("AI provider request failed for {}", request.getRequestURI(), ex);
+        return respond(HttpStatus.SERVICE_UNAVAILABLE, "AI_PROVIDER_UNAVAILABLE", ex.getMessage(), request);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

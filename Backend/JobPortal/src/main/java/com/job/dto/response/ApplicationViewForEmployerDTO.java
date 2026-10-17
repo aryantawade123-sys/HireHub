@@ -6,6 +6,7 @@ import lombok.Setter;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Getter
 @Setter
@@ -18,6 +19,8 @@ public class ApplicationViewForEmployerDTO {
     private String applicantProfilePicture;
     private String resumeUrl;
     private ApplicationStatus status;
+    private boolean silverMedalist;
     private LocalDateTime appliedAt;
     private String jobTitle;
+    private List<ScreeningAnswerDTO> screeningAnswers;
 }

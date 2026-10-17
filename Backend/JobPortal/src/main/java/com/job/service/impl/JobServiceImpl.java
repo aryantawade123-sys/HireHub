@@ -1,14 +1,17 @@
 package com.job.service.impl;
 
 import com.job.dto.request.JobRequestDTO;
+import com.job.dto.response.CompensationBenchmarkDTO;
 import com.job.dto.response.JobResponseDTO;
 import com.job.dto.response.PageResponseDTO;
 import com.job.entity.Employer;
 import com.job.entity.Job;
+import com.job.enums.CompensationPeriod;
 import com.job.enums.JobType;
 import com.job.enums.WorkMode;
 import com.job.exception.BadRequestException;
 import com.job.exception.ResourceNotFoundException;
+import com.job.exception.TenantContextException;
 import com.job.exception.UnauthorizedException;
 import com.job.repository.JobRepository;
 import com.job.service.interfaces.IJobService;
@@ -22,13 +25,21 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayList;
+import java.util.Currency;
 import java.util.List;
+import java.util.Locale;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class JobServiceImpl implements IJobService {
+
+    private static final long MINIMUM_BENCHMARK_SAMPLE_COUNT = 3;
+    private static final String BENCHMARK_METHODOLOGY =
+            "Based on active job postings that disclose compensation; average is the mean of each posting's range midpoint.";
 
     private final JobRepository jobRepository;
 
@@ -43,11 +54,16 @@ public class JobServiceImpl implements IJobService {
         job.setLocation(dto.getLocation());
         job.setType(dto.getType() != null ? dto.getType() : JobType.FULL_TIME); // Default type
         job.setWorkMode(dto.getWorkMode() != null ? dto.getWorkMode() : WorkMode.HYBRID); // Default work mode
+        applyCompensation(job, dto);
         job.setResponsibilities(dto.getResponsibilities());
         job.setRequiredSkills(dto.getRequiredSkills());
         job.setScreeningQuestions(dto.getScreeningQuestions()); // Optional field
         job.setPostedAt(LocalDateTime.now());
         job.setEmployer(employer);
+        if (employer.getTenant() == null) {
+            throw new TenantContextException("The employer account is not assigned to a company tenant.");
+        }
+        job.setTenant(employer.getTenant());
 
         return jobRepository.save(job);
     }
@@ -123,6 +139,7 @@ public class JobServiceImpl implements IJobService {
         job.setLocation(dto.getLocation());
         job.setType(dto.getType());
         job.setWorkMode(dto.getWorkMode());
+        applyCompensation(job, dto);
         job.setRequiredSkills(dto.getRequiredSkills());
         job.setResponsibilities(dto.getResponsibilities());
         job.setScreeningQuestions(dto.getScreeningQuestions());
@@ -187,6 +204,39 @@ public class JobServiceImpl implements IJobService {
         return mapToDTO(saved);
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public CompensationBenchmarkDTO getCompensationBenchmark(String titleKeyword, String location, String currency,
+                                                              CompensationPeriod period) {
+        String normalizedLocation = location == null || location.isBlank() ? null : location.trim();
+        String normalizedCurrency = currency.toUpperCase(Locale.ROOT);
+        Currency currencyUnit;
+        try {
+            currencyUnit = Currency.getInstance(normalizedCurrency);
+        } catch (IllegalArgumentException exception) {
+            throw new BadRequestException("Unsupported compensation currency");
+        }
+        int fractionDigits = currencyUnit.getDefaultFractionDigits();
+        if (fractionDigits < 0 || fractionDigits > 3) {
+            throw new BadRequestException("Unsupported compensation currency");
+        }
+        JobRepository.CompensationBenchmarkAggregate result = jobRepository.findCompensationBenchmark(
+                titleKeyword.trim(), normalizedLocation, normalizedCurrency, period);
+        long sampleCount = result.getSampleCount();
+        if (sampleCount < MINIMUM_BENCHMARK_SAMPLE_COUNT) {
+            throw new ResourceNotFoundException("A compensation benchmark is not available for this selection");
+        }
+
+        return new CompensationBenchmarkDTO(
+                normalizedCurrency,
+                period,
+                toMoney(result.getMinimum(), fractionDigits),
+                toMoney(result.getAverageRangeMidpoint(), fractionDigits),
+                toMoney(result.getMaximum(), fractionDigits),
+                sampleCount,
+                BENCHMARK_METHODOLOGY);
+    }
+
     private PageResponseDTO<JobResponseDTO> toPageResponse(Page<Job> page) {
         List<JobResponseDTO> content = page.getContent().stream()
                 .map(this::mapToDTO)
@@ -211,6 +261,10 @@ public class JobServiceImpl implements IJobService {
         dto.setCompanyName(job.getEmployer().getCompanyName());
         dto.setType(job.getType());
         dto.setWorkMode(job.getWorkMode());
+        dto.setCompensationMinimum(job.getCompensationMinimum());
+        dto.setCompensationMaximum(job.getCompensationMaximum());
+        dto.setCompensationCurrency(job.getCompensationCurrency());
+        dto.setCompensationPeriod(job.getCompensationPeriod());
         dto.setProfilePicture(job.getEmployer().getProfilePictureUrl());
         dto.setEmployerId(job.getEmployer().getId());
         dto.setActive(job.isActive());
@@ -218,5 +272,20 @@ public class JobServiceImpl implements IJobService {
         dto.setRequiredSkills(new ArrayList<>(job.getRequiredSkills() != null ? job.getRequiredSkills() : List.of()));
         dto.setScreeningQuestions(new ArrayList<>(job.getScreeningQuestions() != null ? job.getScreeningQuestions() : List.of()));
         return dto;
+    }
+
+    private void applyCompensation(Job job, JobRequestDTO dto) {
+        job.setCompensationMinimum(dto.getCompensationMinimum());
+        job.setCompensationMaximum(dto.getCompensationMaximum());
+        job.setCompensationCurrency(dto.getCompensationCurrency() == null
+                ? null : dto.getCompensationCurrency().toUpperCase(Locale.ROOT));
+        job.setCompensationPeriod(dto.getCompensationPeriod());
+    }
+
+    private BigDecimal toMoney(Object value, int fractionDigits) {
+        if (value instanceof BigDecimal amount) {
+            return amount.setScale(fractionDigits, RoundingMode.HALF_UP);
+        }
+        return new BigDecimal(value.toString()).setScale(fractionDigits, RoundingMode.HALF_UP);
     }
 }

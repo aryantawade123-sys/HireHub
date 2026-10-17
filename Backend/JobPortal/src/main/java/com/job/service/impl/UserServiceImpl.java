@@ -4,12 +4,14 @@ import com.job.dto.request.EmployerRegisterRequestDTO;
 import com.job.dto.request.JobSeekerRegisterRequestDTO;
 import com.job.dto.response.AuthResponseDTO;
 import com.job.entity.Employer;
+import com.job.entity.CompanyTenant;
 import com.job.entity.JobSeeker;
 import com.job.entity.User;
 import com.job.enums.Role;
 import com.job.exception.DuplicateResourceException;
 import com.job.exception.ResourceNotFoundException;
 import com.job.repository.EmployerRepository;
+import com.job.repository.CompanyTenantRepository;
 import com.job.repository.JobSeekerRepository;
 import com.job.repository.UserRepository;
 import com.job.service.interfaces.IUserService;
@@ -28,6 +30,7 @@ public class UserServiceImpl implements IUserService {
 
     private final UserRepository userRepository;
     private final EmployerRepository employerRepository;
+    private final CompanyTenantRepository companyTenantRepository;
     private final JobSeekerRepository jobSeekerRepository;
     private final PasswordEncoder passwordEncoder;
 
@@ -83,6 +86,7 @@ public class UserServiceImpl implements IUserService {
         employer.setRole(Role.EMPLOYER);
         employer.setEmail(dto.getEmail());
         employer.setIndustry(dto.getIndustry());
+        employer.setTenant(companyTenantRepository.save(new CompanyTenant(dto.getCompanyName().trim())));
         return employerRepository.save(employer);
     }
 

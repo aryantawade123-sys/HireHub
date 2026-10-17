@@ -27,14 +27,20 @@ public class AuthRateLimitFilter extends OncePerRequestFilter {
     private final Cache<String, Bucket> bucketCache;
     private final int maxRequests;
     private final int windowMinutes;
+    private final int aiMaxRequests;
+    private final int aiWindowMinutes;
     private final ErrorResponseWriter errorResponseWriter;
 
     public AuthRateLimitFilter(
             @Value("${auth.ratelimit.requests:5}") int maxRequests,
             @Value("${auth.ratelimit.window-minutes:1}") int windowMinutes,
+            @Value("${ai.ratelimit.requests:5}") int aiMaxRequests,
+            @Value("${ai.ratelimit.window-minutes:1}") int aiWindowMinutes,
             ErrorResponseWriter errorResponseWriter) {
         this.maxRequests = maxRequests;
         this.windowMinutes = windowMinutes;
+        this.aiMaxRequests = aiMaxRequests;
+        this.aiWindowMinutes = aiWindowMinutes;
         this.errorResponseWriter = errorResponseWriter;
         this.bucketCache = Caffeine.newBuilder()
                 .expireAfterAccess(10, TimeUnit.MINUTES)
@@ -44,7 +50,9 @@ public class AuthRateLimitFilter extends OncePerRequestFilter {
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
         String path = request.getServletPath();
-        return !(path.equals("/auth/signin") || path.startsWith("/auth/signup"));
+        return !(path.equals("/auth/signin")
+                || path.startsWith("/auth/signup")
+                || (request.getMethod().equalsIgnoreCase("POST") && path.startsWith("/ai/")));
     }
 
     @Override
@@ -53,20 +61,27 @@ public class AuthRateLimitFilter extends OncePerRequestFilter {
                                     FilterChain filterChain)
             throws ServletException, IOException {
         String ip = extractClientIp(request);
-        Bucket bucket = bucketCache.get(ip, k -> newBucket());
+        boolean aiRequest = request.getServletPath().startsWith("/ai/");
+        String bucketKey = (aiRequest ? "ai:" : "auth:") + ip;
+        Bucket bucket = bucketCache.get(bucketKey, k -> newBucket(aiRequest));
 
         if (bucket.tryConsume(1)) {
             filterChain.doFilter(request, response);
         } else {
             log.warn("Rate limit exceeded for IP: {} on path: {}", ip, request.getServletPath());
             errorResponseWriter.write(response, HttpStatus.TOO_MANY_REQUESTS, "TOO_MANY_REQUESTS",
-                    "Too many attempts. Please try again in a minute.", request.getRequestURI());
+                    aiRequest
+                            ? "Too many AI requests. Please try again in a minute."
+                            : "Too many attempts. Please try again in a minute.",
+                    request.getRequestURI());
         }
     }
 
-    private Bucket newBucket() {
-        Bandwidth limit = Bandwidth.classic(maxRequests,
-                Refill.intervally(maxRequests, Duration.ofMinutes(windowMinutes)));
+    private Bucket newBucket(boolean aiRequest) {
+        int requestLimit = aiRequest ? aiMaxRequests : maxRequests;
+        int window = aiRequest ? aiWindowMinutes : windowMinutes;
+        Bandwidth limit = Bandwidth.classic(requestLimit,
+                Refill.intervally(requestLimit, Duration.ofMinutes(window)));
         return Bucket.builder().addLimit(limit).build();
     }
 

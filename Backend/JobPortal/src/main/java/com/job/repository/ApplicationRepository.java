@@ -13,6 +13,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface ApplicationRepository extends JpaRepository<Application, Long> {
@@ -28,5 +29,26 @@ public interface ApplicationRepository extends JpaRepository<Application, Long> 
 
     @Query("SELECT a FROM Application a JOIN FETCH a.jobSeeker JOIN FETCH a.job j JOIN FETCH j.employer WHERE j.employer = :employer")
     List<Application> findByJob_Employer(@Param("employer") Employer employer);
+
+    @Query(value = "SELECT a FROM Application a JOIN FETCH a.jobSeeker JOIN FETCH a.job j JOIN FETCH j.employer " +
+            "WHERE j.employer = :employer ORDER BY a.appliedAt DESC",
+            countQuery = "SELECT COUNT(a) FROM Application a WHERE a.job.employer = :employer")
+    Page<Application> findRecentByEmployer(@Param("employer") Employer employer, Pageable pageable);
+
+    @Query("SELECT a FROM Application a JOIN FETCH a.jobSeeker JOIN FETCH a.job j JOIN FETCH j.employer " +
+            "WHERE a.id = :id")
+    Optional<Application> findByIdWithEmployer(@Param("id") Long id);
+
+    @Query("SELECT a.status AS status, COUNT(a) AS applicationCount FROM Application a " +
+            "WHERE a.job.employer = :employer GROUP BY a.status")
+    List<ApplicationStatusCount> countByStatusForEmployer(@Param("employer") Employer employer);
+
     List<Application> findByJob_EmployerAndStatus(Employer employer, ApplicationStatus status);
+    List<Application> findByJob_EmployerAndStatusAndSilverMedalistTrue(
+            Employer employer, ApplicationStatus status);
+
+    interface ApplicationStatusCount {
+        ApplicationStatus getStatus();
+        long getApplicationCount();
+    }
 }

@@ -2,8 +2,10 @@ package com.job.controller;
 
 import com.job.dto.request.ApplicationRequestDTO;
 import com.job.dto.request.ApplicationStatusUpdateDTO;
+import com.job.dto.request.SilverMedalistRequestDTO;
 import com.job.dto.response.ApplicationResponseDTO;
 import com.job.dto.response.ApplicationViewForEmployerDTO;
+import com.job.dto.response.EmployerFunnelAnalyticsDTO;
 import com.job.dto.response.PageResponseDTO;
 import com.job.entity.Employer;
 import com.job.entity.JobSeeker;
@@ -110,11 +112,37 @@ public class ApplicationsController {
     }
 
     @PreAuthorize("hasRole('EMPLOYER')")
+    @PutMapping("/{id}/silver-medalist")
+    public ResponseEntity<ApplicationViewForEmployerDTO> updateSilverMedalist(
+            @PathVariable Long id,
+            @Valid @RequestBody SilverMedalistRequestDTO dto,
+            @RequestAttribute("user") User user) {
+        Employer employer = (Employer) user;
+        return ResponseEntity.ok(
+                applicationService.updateSilverMedalist(id, dto.getSelected(), employer));
+    }
+
+    @PreAuthorize("hasRole('EMPLOYER')")
     @GetMapping("/employer")
     public ResponseEntity<List<ApplicationViewForEmployerDTO>> getAllApplicationsForEmployer(
             @RequestAttribute("user") User user,
             @RequestParam(name = "status", required = false) ApplicationStatus status) {
         Employer employer = (Employer) user;
         return ResponseEntity.ok(applicationService.getAllApplicationsForEmployer(employer, status));
+    }
+
+    @PreAuthorize("hasRole('EMPLOYER')")
+    @GetMapping("/employer/silver-medalists")
+    public ResponseEntity<List<ApplicationViewForEmployerDTO>> getSilverMedalistsForEmployer(
+            @RequestAttribute("user") User user) {
+        return ResponseEntity.ok(
+                applicationService.getSilverMedalistsForEmployer((Employer) user));
+    }
+
+    @PreAuthorize("hasRole('EMPLOYER')")
+    @GetMapping("/employer/analytics")
+    public ResponseEntity<EmployerFunnelAnalyticsDTO> getEmployerFunnelAnalytics(
+            @RequestAttribute("user") User user) {
+        return ResponseEntity.ok(applicationService.getEmployerFunnelAnalytics((Employer) user));
     }
 }

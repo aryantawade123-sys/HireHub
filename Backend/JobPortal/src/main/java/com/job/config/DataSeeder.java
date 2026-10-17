@@ -1,6 +1,7 @@
 package com.job.config;
 
 import com.job.entity.Employer;
+import com.job.entity.CompanyTenant;
 import com.job.entity.Job;
 import com.job.enums.JobType;
 import com.job.enums.Role;
@@ -130,6 +131,7 @@ public class DataSeeder implements CommandLineRunner {
 
             // Assign different employers
             job.setEmployer(employers.get(i % employers.size()));
+            job.setTenant(employers.get(i % employers.size()).getTenant());
 
             job.setResponsibilities(
                     createResponsibilities(title)
@@ -203,6 +205,9 @@ public class DataSeeder implements CommandLineRunner {
             employer.setCompanyName(companies[i][0]);
 
             employer.setIndustry(companies[i][1]);
+            CompanyTenant tenant = new CompanyTenant(companies[i][0]);
+            entityManager.persist(tenant);
+            employer.setTenant(tenant);
 
             employer.setJobs(new ArrayList<>());
 

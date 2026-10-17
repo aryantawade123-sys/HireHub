@@ -9,6 +9,7 @@ import com.job.repository.EmployerRepository;
 import com.job.repository.JobSeekerRepository;
 import com.job.repository.UserRepository;
 import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.JwtException;
 import org.springframework.http.HttpStatus;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -63,11 +64,17 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             errorResponseWriter.write(response, HttpStatus.UNAUTHORIZED, "TOKEN_EXPIRED",
                     "Your session has expired, please log in again", request.getRequestURI());
             return;
+        } catch (JwtException | IllegalArgumentException e) {
+            log.warn("Invalid JWT for request: {}", request.getRequestURI());
+            errorResponseWriter.write(response, HttpStatus.UNAUTHORIZED, "INVALID_TOKEN",
+                    "Your session is invalid, please log in again", request.getRequestURI());
+            return;
         }
 
-        if (username == null) {
-            log.error("Could not extract username from token");
-            filterChain.doFilter(request, response);
+        if (username == null || username.isBlank()) {
+            log.warn("JWT has no subject for request: {}", request.getRequestURI());
+            errorResponseWriter.write(response, HttpStatus.UNAUTHORIZED, "INVALID_TOKEN",
+                    "Your session is invalid, please log in again", request.getRequestURI());
             return;
         }
 
@@ -75,35 +82,43 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
         Optional<User> optionalUser = userRepository.findByUsername(username);
         if (optionalUser.isEmpty()) {
-            log.warn("No user found with username: {}", username);
-            filterChain.doFilter(request, response);
+            log.warn("JWT subject does not identify an active user for request: {}", request.getRequestURI());
+            errorResponseWriter.write(response, HttpStatus.UNAUTHORIZED, "INVALID_TOKEN",
+                    "Your session is invalid, please log in again", request.getRequestURI());
             return;
         }
 
         User user = optionalUser.get();
+        User authenticatedUser = user;
+        if (user.getRole() == Role.EMPLOYER) {
+            Optional<Employer> employer = employerRepository.findById(user.getId());
+            if (employer.isEmpty()) {
+                log.error("Employer record missing for authenticated user id: {}", user.getId());
+                errorResponseWriter.write(response, HttpStatus.UNAUTHORIZED, "INVALID_TOKEN",
+                        "Your session is invalid, please log in again", request.getRequestURI());
+                return;
+            }
+            authenticatedUser = employer.get();
+        } else if (user.getRole() == Role.JOB_SEEKER) {
+            Optional<JobSeeker> jobSeeker = jobSeekerRepository.findById(user.getId());
+            if (jobSeeker.isEmpty()) {
+                log.error("Job seeker record missing for authenticated user id: {}", user.getId());
+                errorResponseWriter.write(response, HttpStatus.UNAUTHORIZED, "INVALID_TOKEN",
+                        "Your session is invalid, please log in again", request.getRequestURI());
+                return;
+            }
+            authenticatedUser = jobSeeker.get();
+        }
 
         String roleName = "ROLE_" + user.getRole().name();
         List<SimpleGrantedAuthority> authorities = Collections.singletonList(new SimpleGrantedAuthority(roleName));
 
         UsernamePasswordAuthenticationToken authenticationToken =
-                new UsernamePasswordAuthenticationToken(user, null, authorities);
+                new UsernamePasswordAuthenticationToken(authenticatedUser, null, authorities);
 
         SecurityContextHolder.getContext().setAuthentication(authenticationToken);
         log.debug("Security context set for user: {} with role: {}", username, roleName);
-
-        if (user.getRole() == Role.EMPLOYER) {
-            employerRepository.findById(user.getId()).ifPresentOrElse(
-                    employer -> request.setAttribute("user", employer),
-                    () -> log.warn("Employer record not found for user id: {}", user.getId())
-            );
-        } else if (user.getRole() == Role.JOB_SEEKER) {
-            jobSeekerRepository.findById(user.getId()).ifPresentOrElse(
-                    jobSeeker -> request.setAttribute("user", jobSeeker),
-                    () -> log.warn("JobSeeker record not found for user id: {}", user.getId())
-            );
-        } else {
-            request.setAttribute("user", user);
-        }
+        request.setAttribute("user", authenticatedUser);
 
         filterChain.doFilter(request, response);
     }

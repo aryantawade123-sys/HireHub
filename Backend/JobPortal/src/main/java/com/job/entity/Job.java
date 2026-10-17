@@ -1,6 +1,7 @@
 package com.job.entity;
 
 import com.job.enums.JobType;
+import com.job.enums.CompensationPeriod;
 import com.job.enums.WorkMode;
 import jakarta.persistence.*;
 import org.hibernate.annotations.BatchSize;
@@ -8,11 +9,15 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.Filter;
 
 import java.time.LocalDateTime;
+import java.math.BigDecimal;
 import java.util.List;
 
 @Entity
+@Filter(name = "tenantFilter", condition = "tenant_id = :tenantId")
+@Filter(name = "tenantLoadByKeyFilter", condition = "tenant_id = :tenantId")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -38,6 +43,18 @@ public class Job {
     @Enumerated(EnumType.STRING)
     private WorkMode workMode;
 
+    @Column(precision = 15, scale = 3)
+    private BigDecimal compensationMinimum;
+
+    @Column(precision = 15, scale = 3)
+    private BigDecimal compensationMaximum;
+
+    @Column(length = 3)
+    private String compensationCurrency;
+
+    @Enumerated(EnumType.STRING)
+    private CompensationPeriod compensationPeriod;
+
     private LocalDateTime postedAt;
 
     @Column(nullable = false)
@@ -45,6 +62,10 @@ public class Job {
 
     @ManyToOne(fetch = FetchType.LAZY)
     private Employer employer;
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "tenant_id", nullable = false)
+    private CompanyTenant tenant;
 
     @ElementCollection(fetch = FetchType.LAZY)
     @BatchSize(size = 25)

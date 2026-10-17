@@ -4,8 +4,11 @@ import com.job.designpatterns.Observer.ApplicationObserver;
 import com.job.dto.request.ApplicationRequestDTO;
 import com.job.dto.response.ApplicationResponseDTO;
 import com.job.dto.response.ApplicationViewForEmployerDTO;
+import com.job.dto.response.EmployerFunnelAnalyticsDTO;
 import com.job.dto.response.PageResponseDTO;
+import com.job.dto.response.ScreeningAnswerDTO;
 import com.job.entity.Application;
+import com.job.entity.ApplicationScreeningAnswer;
 import com.job.entity.Employer;
 import com.job.entity.Job;
 import com.job.entity.JobSeeker;
@@ -26,6 +29,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.EnumMap;
+import java.util.Map;
 
 @Slf4j
 @Service
@@ -48,23 +53,38 @@ public class ApplicationServiceImpl implements IApplicationService {
         Job job = jobRepository.findById(dto.getJobId())
                 .orElseThrow(() -> new ResourceNotFoundException("Job not found"));
 
+        if (!job.isActive()) {
+            throw new BadRequestException("This job is no longer accepting applications.");
+        }
+
         boolean alreadyApplied = applicationRepository.existsByJobAndJobSeeker(job, jobSeeker);
         if (alreadyApplied) {
             throw new DuplicateResourceException("You have already applied for this job");
         }
 
-        List<String> screeningQs = job.getScreeningQuestions();
-        if (screeningQs != null && !screeningQs.isEmpty()) {
-            if (dto.getScreeningAnswers() == null || dto.getScreeningAnswers().size() != screeningQs.size()) {
+        List<String> screeningQs = job.getScreeningQuestions() == null ? List.of() : job.getScreeningQuestions();
+        List<String> screeningAnswers = dto.getScreeningAnswers() == null ? List.of() : dto.getScreeningAnswers();
+        if (screeningQs.size() != screeningAnswers.size()) {
+            if (!screeningQs.isEmpty()) {
                 throw new BadRequestException("You must answer all required screening questions.");
             }
+            throw new BadRequestException("This job does not accept screening answers.");
+        }
+        if (screeningAnswers.stream().anyMatch(answer -> answer == null || answer.isBlank())) {
+            throw new BadRequestException("Screening answers cannot be blank.");
         }
 
         Application application = new Application();
         application.setJob(job);
         application.setJobSeeker(jobSeeker);
+        application.setTenant(job.getTenant());
         application.setResumeUrl(jobSeeker.getResumeUrl());
         application.setStatus(ApplicationStatus.PENDING);
+        List<ApplicationScreeningAnswer> savedAnswers = new java.util.ArrayList<>();
+        for (int i = 0; i < screeningAnswers.size(); i++) {
+            savedAnswers.add(new ApplicationScreeningAnswer(screeningQs.get(i), screeningAnswers.get(i).trim()));
+        }
+        application.setScreeningAnswers(savedAnswers);
 
         applicationRepository.save(application);
 
@@ -174,6 +194,9 @@ public class ApplicationServiceImpl implements IApplicationService {
         }
 
         app.setStatus(newStatus);
+        if (newStatus != ApplicationStatus.REJECTED) {
+            app.setSilverMedalist(false);
+        }
         applicationRepository.save(app);
         notifyObservers(app.getJobSeeker(), app);
 
@@ -186,9 +209,75 @@ public class ApplicationServiceImpl implements IApplicationService {
     }
 
     @Override
+    @Transactional
+    public ApplicationViewForEmployerDTO updateSilverMedalist(
+            Long applicationId, boolean selected, Employer employer) {
+        Application app = applicationRepository.findById(applicationId)
+                .orElseThrow(() -> new ResourceNotFoundException("Application not found"));
+
+        if (!app.getJob().getEmployer().getId().equals(employer.getId())) {
+            throw new UnauthorizedException("Unauthorized to update this application");
+        }
+        if (selected && app.getStatus() != ApplicationStatus.REJECTED) {
+            throw new BadRequestException("Only rejected applications can be added to the silver-medalist pool.");
+        }
+
+        app.setSilverMedalist(selected);
+        applicationRepository.save(app);
+        return mapToEmployerDTO(app);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ApplicationViewForEmployerDTO> getSilverMedalistsForEmployer(Employer employer) {
+        return applicationRepository
+                .findByJob_EmployerAndStatusAndSilverMedalistTrue(employer, ApplicationStatus.REJECTED)
+                .stream()
+                .map(this::mapToEmployerDTO)
+                .toList();
+    }
+
+    @Override
     @Transactional(readOnly = true)
     public boolean hasUserAppliedToJob(Long jobId, JobSeeker jobSeeker) {
         return applicationRepository.existsByJobIdAndJobSeeker(jobId, jobSeeker);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public EmployerFunnelAnalyticsDTO getEmployerFunnelAnalytics(Employer employer) {
+        Map<ApplicationStatus, Long> counts = new EnumMap<>(ApplicationStatus.class);
+        for (ApplicationStatus status : ApplicationStatus.values()) {
+            counts.put(status, 0L);
+        }
+        long totalApplications = 0;
+        for (ApplicationRepository.ApplicationStatusCount row : applicationRepository.countByStatusForEmployer(employer)) {
+            counts.put(row.getStatus(), row.getApplicationCount());
+            totalApplications += row.getApplicationCount();
+        }
+        long applicationTotal = totalApplications;
+
+        List<EmployerFunnelAnalyticsDTO.FunnelStage> stages = java.util.Arrays.stream(ApplicationStatus.values())
+                .map(status -> new EmployerFunnelAnalyticsDTO.FunnelStage(
+                        status,
+                        counts.get(status),
+                        applicationTotal == 0 ? 0.0 : roundPercent(counts.get(status) * 100.0 / applicationTotal)))
+                .toList();
+        long interviewCount = counts.get(ApplicationStatus.INTERVIEW);
+        long offerCount = counts.get(ApplicationStatus.OFFERED);
+        double interviewRate = totalApplications == 0 ? 0.0 : roundPercent(interviewCount * 100.0 / totalApplications);
+        double offerRate = totalApplications == 0 ? 0.0 : roundPercent(offerCount * 100.0 / totalApplications);
+
+        return new EmployerFunnelAnalyticsDTO(
+                jobRepository.countByEmployer(employer),
+                totalApplications,
+                interviewRate,
+                offerRate,
+                stages);
+    }
+
+    private double roundPercent(double value) {
+        return Math.round(value * 10.0) / 10.0;
     }
 
     private ApplicationResponseDTO mapToDTO(Application application) {
@@ -229,9 +318,15 @@ public class ApplicationServiceImpl implements IApplicationService {
         dto.setApplicantName(applicant.getName());
         dto.setApplicantProfilePicture(applicant.getProfilePictureUrl());
         dto.setStatus(app.getStatus());
+        dto.setSilverMedalist(app.isSilverMedalist());
         dto.setAppliedAt(app.getAppliedAt());
 
         dto.setJobTitle(job.getTitle());
+        dto.setScreeningAnswers(app.getScreeningAnswers() == null
+                ? List.of()
+                : app.getScreeningAnswers().stream()
+                        .map(answer -> new ScreeningAnswerDTO(answer.getQuestion(), answer.getAnswer()))
+                        .toList());
 
         return dto;
     }
